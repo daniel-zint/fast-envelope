@@ -155,7 +155,8 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
 if(MSVC)
 	# Fix Windows issue with ambiguity of std::byte
-	target_compile_definitions(${PROJECT_NAME} PUBLIC _HAS_STD_BYTE=0)
+	# target_compile_definitions(${PROJECT_NAME} PUBLIC _HAS_STD_BYTE=0)
+	target_compile_definitions(${PROJECT_NAME} PUBLIC WIN32_LEAN_AND_MEAN)
 endif()
 # Extra warnings
 target_link_libraries(${PROJECT_NAME} PRIVATE warnings::all)
