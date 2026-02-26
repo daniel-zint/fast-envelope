@@ -1,36 +1,11 @@
-################################################################################
-# Find Geogram and build it as part of the current build
-################################################################################
+# Geogram (https://github.com/polyfem/geogram)
+# License: BSD
 
 if(TARGET geogram)
-	return()
+    return()
 endif()
 
-################################################################################
-
-if(THIRD_PARTY_DIR)
-	set(GEOGRAM_SEARCH_PATHS ${THIRD_PARTY_DIR})
-else()
-	# set(GEOGRAM_SEARCH_PATHS
-	# 	${GEOGRAM_INSTALL_PREFIX}
-	# 	"$ENV{GEOGRAM_INSTALL_PREFIX}"
-	# 	"/usr/local/"
-	# 	"$ENV{PROGRAMFILES}/Geogram"
-	# 	"$ENV{PROGRAMW6432}/Geogram"
-	# 	"$ENV{HOME}/.local/")
-endif()
-
-find_path(GEOGRAM_SOURCE_INCLUDE_DIR
-		geogram/basic/common.h
-		PATHS ${GEOGRAM_SEARCH_PATHS}
-		PATH_SUFFIXES geogram/src/lib
-		NO_DEFAULT_PATH
-)
-
-set(GEOGRAM_ROOT ${GEOGRAM_SOURCE_INCLUDE_DIR}/../..)
-
-message("Found Geogram here: ${GEOGRAM_ROOT}")
-################################################################################
+message(STATUS "Third-party: creating target 'geogram'")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	set(VORPALINE_ARCH_64 TRUE CACHE BOOL "" FORCE)
@@ -46,7 +21,7 @@ endif()
 
 option(GEOGRAM_WITH_GRAPHICS "Viewers and geogram_gfx library" OFF)
 option(GEOGRAM_WITH_LEGACY_NUMERICS "Legacy numerical libraries" OFF)
-option(GEOGRAM_WITH_HLBFGS "Non-linear solver (Yang Liu's HLBFGS)" OFF)
+option(GEOGRAM_WITH_HLBFGS "Non-linear solver (Yang Liu's HLBFGS)" ON)
 option(GEOGRAM_WITH_TETGEN "Tetrahedral mesher (Hang Si's TetGen)" OFF)
 option(GEOGRAM_WITH_TRIANGLE "Triangle mesher (Jonathan Shewchuk's triangle)" OFF)
 option(GEOGRAM_WITH_EXPLORAGRAM "Experimental code (hexahedral meshing vpipeline and optimal transport)" OFF)
@@ -62,7 +37,21 @@ endif()
 
 ################################################################################
 
-add_subdirectory(${GEOGRAM_ROOT} geogram)
+include(CPM)
+CPMAddPackage("gh:BrunoLevy/geogram#c1148fb9dfc169d14295ba83a24ddfc7be014058")
+
+find_path(GEOGRAM_SOURCE_INCLUDE_DIR
+		geogram/basic/common.h
+		PATHS ${geogram_SOURCE_DIR}
+		PATH_SUFFIXES src/lib
+		NO_DEFAULT_PATH
+)
+
+set(GEOGRAM_ROOT ${GEOGRAM_SOURCE_INCLUDE_DIR}/../..)
+
+message(STATUS "Found Geogram here: ${GEOGRAM_ROOT}")
+
+# add_subdirectory(${GEOGRAM_ROOT} geogram)
 target_include_directories(geogram SYSTEM PUBLIC ${GEOGRAM_SOURCE_INCLUDE_DIR})
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -80,13 +69,12 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     		target_link_libraries(OpenMP_TARGET INTERFACE ${OpenMP_CXX_FLAGS})
 	endif()
 
-	target_link_libraries(FastEnvelope PUBLIC OpenMP::OpenMP_CXX)
+	target_link_libraries(geogram PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 ################################################################################
 
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+if(MSVC OR MSYS)
 	# remove warning for multiply defined symbols (caused by multiple
 	# instantiations of STL templates)
 	#target_compile_options(geogram INTERFACE /wd4251)
@@ -102,3 +90,5 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	# we want M_PI etc...
 	target_compile_definitions(geogram INTERFACE -D_USE_MATH_DEFINES)
 endif()
+
+

@@ -1,17 +1,60 @@
-################################################################################
-cmake_minimum_required(VERSION 3.15)
-project(FastEnvelope)
-################################################################################
-
-# cmake_policy(SET CMP0063 NEW)
-# set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-
 # Detects whether this is a top-level project
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-	set(FAST_ENVELOPE_TOPLEVEL_PROJECT ON)
+get_directory_property(HAS_PARENT PARENT_DIRECTORY)
+
+if(HAS_PARENT)
+    set(FAST_ENVELOPE_TOPLEVEL_PROJECT OFF)
 else()
-	set(FAST_ENVELOPE_TOPLEVEL_PROJECT OFF)
+    set(FAST_ENVELOPE_TOPLEVEL_PROJECT ON)
 endif()
+
+# Check required CMake version
+set(REQUIRED_CMAKE_VERSION "3.25.0")
+if(FAST_ENVELOPE_TOPLEVEL_PROJECT)
+    cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0.0")
+        message(WARNING "CMake version is ${CMAKE_VERSION}, setting stuff for dependencies.")
+        SET(CMAKE_POLICY_VERSION_MINIMUM ${REQUIRED_CMAKE_VERSION})
+    endif()
+else()
+    # Don't use cmake_minimum_required here to avoid implicitly overriding parent policies
+    if(${CMAKE_VERSION} VERSION_LESS ${REQUIRED_CMAKE_VERSION})
+        message(FATAL_ERROR "CMake required version to build FastEnvelope is ${REQUIRED_CMAKE_VERSION}")
+    endif()
+endif()
+
+# Enable ccache if available
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" ${FAST_ENVELOPE_TOPLEVEL_PROJECT})
+else()
+    option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" OFF)
+endif()
+if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
+    set(ccacheEnv
+        CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
+        CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
+    )
+    foreach(lang IN ITEMS C CXX)
+        set(CMAKE_${lang}_COMPILER_LAUNCHER
+            ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
+        )
+    endforeach()
+endif()
+
+################################################################################
+# CMake Policies
+################################################################################
+
+cmake_policy(SET CMP0054 NEW) # Only interpret if() arguments as variables or keywords when unquoted.
+cmake_policy(SET CMP0076 NEW) # target_sources() command converts relative paths to absolute.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+  cmake_policy(SET CMP0135 NEW) # Set the timestamps of all extracted contents to the time of the extraction.
+endif()
+
+# ###############################################################################
+project(FastEnvelope)
+
+# ###############################################################################
 
 if(INPUT_THIRD_PARTY_DIR)
 	set(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${INPUT_THIRD_PARTY_DIR}/)
@@ -34,9 +77,6 @@ include(FastEnvelopeUtils)
 
 # Extra warnings
 include(Warnings)
-
-# Use C++11/14
-include(CXXFeatures)
 
 
 # Sort projects inside the solution
@@ -108,15 +148,17 @@ include(FastEnvelopeDependencies)
 
 # add_library() can only be called without any source since CMake 3.11 ...
 add_library(${PROJECT_NAME} src/common_algorithms.cpp)
-target_compile_features(${PROJECT_NAME} PRIVATE ${CXX11_FEATURES})
+# C++ standard
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 # Public include directory for FastEnvelope
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR}/include)
+if(MSVC)
+	# Fix Windows issue with ambiguity of std::byte
+	target_compile_definitions(${PROJECT_NAME} PUBLIC _HAS_STD_BYTE=0)
+endif()
 # Extra warnings
 target_link_libraries(${PROJECT_NAME} PRIVATE warnings::all)
-
-# Use C++14
-target_compile_features(${PROJECT_NAME} PUBLIC ${CXX14_FEATURES})
 
 
 # libigl
