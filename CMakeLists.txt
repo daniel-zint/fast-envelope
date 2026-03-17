@@ -221,7 +221,7 @@ if(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES)
 
 elseif(FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES)
 	if(NOT TARGET geogram AND NOT TARGET geogram::geogram)
-		fast_envelope_download_geogram()
+		# fast_envelope_download_geogram()
 		include(geogram)
 	endif()
 	if(TARGET geogram)
@@ -302,7 +302,7 @@ if(FAST_ENVELOPE_TOPLEVEL_PROJECT)
 	# link libraries to the app library
 	if(NOT FAST_ENVELOPE_WITH_GEOGRAM_PREDICATES)
 		# Geogram
-		fast_envelope_download_geogram()
+		# fast_envelope_download_geogram()
 		include(geogram)
 		target_link_libraries(${PROJECT_NAME}_app PUBLIC geogram)
 	endif()
