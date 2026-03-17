@@ -22,17 +22,3 @@ if(FAST_ENVELOPE_WITH_SANITIZERS)
     fast_envelope_download_sanitizers()
     find_package(Sanitizers)
 endif()
-
-# CL11
-if(NOT TARGET CLI11::CLI11)
-    fast_envelope_download_cli11()
-    add_subdirectory(${FAST_ENVELOPE_EXTERNAL}/cli11)
-endif()
-
-# spdlog
-if(NOT TARGET spdlog::spdlog)
-	fast_envelope_download_spdlog()
-	add_subdirectory(${FAST_ENVELOPE_EXTERNAL}/spdlog)
-endif()
-
-

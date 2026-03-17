@@ -23,15 +23,6 @@ endfunction()
 
 ################################################################################
 
-## libigl
-function(fast_envelope_download_libigl)
-    fast_envelope_download_project(libigl
-        GIT_REPOSITORY https://github.com/libigl/libigl.git
-        GIT_TAG        fc7f4b99415e0b0e3c4109d8e55b7ff6a5fc8b72
-    )
-endfunction()
-
-
 ## CLI11
 function(fast_envelope_download_cli11)
     fast_envelope_download_project(cli11
@@ -39,15 +30,6 @@ function(fast_envelope_download_cli11)
         URL_MD5 48ef97262adb0b47a2f0a7edbda6e2aa
     )
 endfunction()
-
-## tbb
-function(fast_envelope_download_tbb)
-    fast_envelope_download_project(tbb
-        GIT_REPOSITORY https://github.com/wjakob/tbb.git
-        GIT_TAG        08b4341a1893a72656467e96137f1f99d0112547
-    )
-endfunction()
-
 
 ## Sanitizers
 function(fast_envelope_download_sanitizers)
