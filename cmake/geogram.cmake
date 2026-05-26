@@ -38,7 +38,7 @@ endif()
 ################################################################################
 
 include(CPM)
-CPMAddPackage("gh:BrunoLevy/geogram#c1148fb9dfc169d14295ba83a24ddfc7be014058")
+CPMAddPackage("gh:BrunoLevy/geogram#89adc76b13a940de7abdd0280439963035b85237")
 
 find_path(GEOGRAM_SOURCE_INCLUDE_DIR
 		geogram/basic/common.h
