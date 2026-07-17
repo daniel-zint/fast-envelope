@@ -352,6 +352,13 @@ if(FAST_ENVELOPE_TOPLEVEL_PROJECT)
 		endif()
 
 		fast_envelope_copy_dll(${PROJECT_NAME}_test)
+
+		# Self-contained characterization test guarding the AABB box-cut hoist.
+		# No library deps; runnable under ctest (exits non-zero on any mismatch).
+		add_executable(${PROJECT_NAME}_test_boxcut tests/box_cut_equivalence.cpp)
+		target_compile_features(${PROJECT_NAME}_test_boxcut PUBLIC ${CXX14_FEATURES})
+		enable_testing()
+		add_test(NAME box_cut_equivalence COMMAND ${PROJECT_NAME}_test_boxcut)
 	endif()
 	###################################################################
 	#add_executable(${PROJECT_NAME}_bin app/main.cpp)
