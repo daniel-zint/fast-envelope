@@ -7,10 +7,19 @@
 #include<fastenvelope/common_algorithms.h>
 
 namespace fastEnvelope {
+	// Query-triangle data that is invariant across every AABB node visited during
+	// a single triangle_find_bbox traversal. Precomputed once and threaded through
+	// the recursion so the per-node box-cut test does not recompute the triangle's
+	// 2D projections or the (box-independent) orient_2d edge signs at every node.
+	struct TriCutCache {
+		Vector3 tmin, tmax;                          // triangle AABB
+		std::array<std::array<Vector2, 3>, 3> tri2d; // [projection axis][triangle vertex]
+		std::array<std::array<int, 3>, 3> ori;       // [axis][edge j] triangle-only orient_2d sign
+	};
 	class AABB {
 	private:
-		
-		
+
+
 		std::vector<std::array<Vector3, 2>> boxlist;
 		size_t n_corners = -1;
 
@@ -20,7 +29,7 @@ namespace fastEnvelope {
 			int b, int e);
 
 		void triangle_search_bbd_recursive(
-			const Vector3 &triangle0, const Vector3 &triangle1, const Vector3 &triangle2,
+			const TriCutCache &tc,
 			std::vector<unsigned int> &list,
 			int n, int b, int e) const;
 		void point_search_bbd_recursive(
@@ -40,7 +49,7 @@ namespace fastEnvelope {
 
 		static int envelope_max_node_index(int node_index, int b, int e);
 
-		bool is_triangle_cut_bounding_box(const Vector3 &tri0, const Vector3 &tri1, const Vector3 &tri2, int index) const;
+		bool is_triangle_cut_bounding_box(const TriCutCache &tc, int index) const;
 		bool is_point_cut_bounding_box(const Vector3 &p,  int index) const;
 		bool is_segment_cut_bounding_box(const Vector3 &seg0, const Vector3 &seg1, int index) const;
 		bool is_bbd_cut_bounding_box(const Vector3 &bbd0, const Vector3 &bbd1, int index) const;
@@ -65,7 +74,20 @@ namespace fastEnvelope {
 				return;
 			}
 		
-			triangle_search_bbd_recursive(triangle0, triangle1, triangle2, list, 1, 0, n_corners);
+			// Precompute the query-triangle-invariant data once, then reuse it at
+			// every AABB node instead of recomputing it in is_triangle_cut_bounding_box.
+			TriCutCache tc;
+			algorithms::get_tri_corners(triangle0, triangle1, triangle2, tc.tmin, tc.tmax);
+			for (int i = 0; i < 3; i++) {
+				tc.tri2d[i][0] = algorithms::to_2d(triangle0, i);
+				tc.tri2d[i][1] = algorithms::to_2d(triangle1, i);
+				tc.tri2d[i][2] = algorithms::to_2d(triangle2, i);
+				for (int j = 0; j < 3; j++) {
+					tc.ori[i][j] = fastEnvelope::Predicates::orient_2d(
+						tc.tri2d[i][(j + 2) % 3], tc.tri2d[i][j % 3], tc.tri2d[i][(j + 1) % 3]);
+				}
+			}
+			triangle_search_bbd_recursive(tc, list, 1, 0, n_corners);
 		}
 
 		inline void point_find_bbox(

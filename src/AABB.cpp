@@ -34,15 +34,13 @@ void AABB::init_envelope_boxes_recursive(
   }
 }
 
-void AABB::triangle_search_bbd_recursive(const Vector3 &triangle0,
-                                         const Vector3 &triangle1,
-                                         const Vector3 &triangle2,
+void AABB::triangle_search_bbd_recursive(const TriCutCache &tc,
                                          std::vector<unsigned int> &list, int n,
                                          int b, int e) const {
   assert(e != b);
 
   assert(n < boxlist.size());
-  bool cut = is_triangle_cut_bounding_box(triangle0, triangle1, triangle2, n);
+  bool cut = is_triangle_cut_bounding_box(tc, n);
 
   if (cut == false)
     return;
@@ -62,10 +60,8 @@ void AABB::triangle_search_bbd_recursive(const Vector3 &triangle0,
 
   // Traverse the "nearest" child first, so that it has more chances
   // to prune the traversal of the other child.
-  triangle_search_bbd_recursive(triangle0, triangle1, triangle2, list, childl,
-                                b, m);
-  triangle_search_bbd_recursive(triangle0, triangle1, triangle2, list, childr,
-                                m, e);
+  triangle_search_bbd_recursive(tc, list, childl, b, m);
+  triangle_search_bbd_recursive(tc, list, childr, m, e);
 }
 
 void AABB::point_search_bbd_recursive(const Vector3 &point,
@@ -180,55 +176,47 @@ void AABB::init(const std::vector<std::array<Vector3, 2>> &cornerlist) {
   init_envelope_boxes_recursive(cornerlist, 1, 0, n_corners);
 }
 
-bool AABB::is_triangle_cut_bounding_box(const Vector3 &tri0,
-                                        const Vector3 &tri1,
-                                        const Vector3 &tri2, int index) const {
+bool AABB::is_triangle_cut_bounding_box(const TriCutCache &tc, int index) const {
   const auto &bmin = boxlist[index][0];
   const auto &bmax = boxlist[index][1];
-  Vector3 tmin, tmax;
 
-  algorithms::get_tri_corners(tri0, tri1, tri2, tmin, tmax);
-  bool cut = algorithms::box_box_intersection(tmin, tmax, bmin, bmax);
-  if (cut == false)
+  // Cheap AABB reject using the precomputed triangle bbox.
+  if (!algorithms::box_box_intersection(tc.tmin, tc.tmax, bmin, bmax))
     return false;
 
-  if (cut) {
+  std::array<Vector2, 4> mp;
+  for (int i = 0; i < 3; i++) {
+    // Triangle projection for this axis is precomputed (box-independent).
+    const std::array<Vector2, 3> &tri = tc.tri2d[i];
 
-    std::array<Vector2, 3> tri;
-    std::array<Vector2, 4> mp;
-    int o0, o1, o2, o3, ori;
-    for (int i = 0; i < 3; i++) {
-      tri[0] = algorithms::to_2d(tri0, i);
-      tri[1] = algorithms::to_2d(tri1, i);
-      tri[2] = algorithms::to_2d(tri2, i);
+    mp[0] = algorithms::to_2d(bmin, i);
+    mp[1] = algorithms::to_2d(bmax, i);
+    mp[2][0] = mp[0][0];
+    mp[2][1] = mp[1][1];
+    mp[3][0] = mp[1][0];
+    mp[3][1] = mp[0][1];
 
-      mp[0] = algorithms::to_2d(bmin, i);
-      mp[1] = algorithms::to_2d(bmax, i);
-      mp[2][0] = mp[0][0];
-      mp[2][1] = mp[1][1];
-      mp[3][0] = mp[1][0];
-      mp[3][1] = mp[0][1];
-
-      for (int j = 0; j < 3; j++) {
-        o0 = fastEnvelope::Predicates::orient_2d(mp[0], tri[j % 3],
-                                                 tri[(j + 1) % 3]);
-        o1 = fastEnvelope::Predicates::orient_2d(mp[1], tri[j % 3],
-                                                 tri[(j + 1) % 3]);
-        o2 = fastEnvelope::Predicates::orient_2d(mp[2], tri[j % 3],
-                                                 tri[(j + 1) % 3]);
-        o3 = fastEnvelope::Predicates::orient_2d(mp[3], tri[j % 3],
-                                                 tri[(j + 1) % 3]);
-        ori = fastEnvelope::Predicates::orient_2d(tri[(j + 2) % 3], tri[j % 3],
-                                                  tri[(j + 1) % 3]);
-        if (ori == 0)
-          continue;
-        if (ori * o0 <= 0 && ori * o1 <= 0 && ori * o2 <= 0 && ori * o3 <= 0)
-          return false;
-      }
+    for (int j = 0; j < 3; j++) {
+      // The triangle-only edge sign is precomputed (box-independent); when it is
+      // zero the original code skipped this edge, so skip before touching the box
+      // corners (also saves the four box orient_2d calls in that case).
+      const int ori = tc.ori[i][j];
+      if (ori == 0)
+        continue;
+      const int o0 =
+          fastEnvelope::Predicates::orient_2d(mp[0], tri[j % 3], tri[(j + 1) % 3]);
+      const int o1 =
+          fastEnvelope::Predicates::orient_2d(mp[1], tri[j % 3], tri[(j + 1) % 3]);
+      const int o2 =
+          fastEnvelope::Predicates::orient_2d(mp[2], tri[j % 3], tri[(j + 1) % 3]);
+      const int o3 =
+          fastEnvelope::Predicates::orient_2d(mp[3], tri[j % 3], tri[(j + 1) % 3]);
+      if (ori * o0 <= 0 && ori * o1 <= 0 && ori * o2 <= 0 && ori * o3 <= 0)
+        return false;
     }
   }
 
-  return cut;
+  return true;
 }
 bool AABB::is_point_cut_bounding_box(const Vector3 &p, int index) const {
   const auto &bmin = boxlist[index][0];
