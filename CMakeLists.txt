@@ -71,8 +71,6 @@ include(FastEnvelopeUtils)
 # Extra warnings
 include(Warnings)
 
-include(fast_envelope_copy_dll)
-
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -86,7 +84,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # FastEnvelope options
 option(FAST_ENVELOPE_WITH_UNIT_TESTS   			"unit test project" 			ON)
-option(FAST_ENVELOPE_ENABLE_TBB        			"Enable TBB"                    ON)
 # option(FAST_ENVELOPE_USE_FLOAT          		"Use floats instead of double"  OFF)
 
 option(FAST_ENVELOPE_WITH_GMP						"Use gmp to have rational predicates"	  OFF)
@@ -128,22 +125,9 @@ endif()
 ################################################################################
 
 
-# TBB
-if(FAST_ENVELOPE_ENABLE_TBB)
-	include(onetbb)
-endif()
-
-
 # if(${FAST_ENVELOPE_USE_FLOAT})
 # 	target_compile_definitions(${PROJECT_NAME} PUBLIC -DFAST_ENVELOPE_USE_FLOAT)
 # endif()
-
-include(cli11)
-include(spdlog)
-
-#spdlog
-target_link_libraries(${PROJECT_NAME} PUBLIC spdlog::spdlog)
-target_link_libraries(${PROJECT_NAME} PUBLIC CLI11::CLI11)
 
 # Predicates
 include(ipred)
@@ -180,48 +164,4 @@ if(FAST_ENVELOPE_TOPLEVEL_PROJECT AND FAST_ENVELOPE_WITH_UNIT_TESTS)
     include(CTest)
     enable_testing()
     add_subdirectory(tests)
-endif()
-
-################################################################################
-# FastEnvelope binary
-################################################################################
-
-# Main executable
-if(FAST_ENVELOPE_TOPLEVEL_PROJECT)
-	# add an application library
-	#add_subdirectory(app/benchmark)
-	set(APP_SOURCES
-		app/benchmark/MeshIO.hpp
-		app/benchmark/MeshIO.cpp
-		app/benchmark/mesh_AABB.h
-		app/benchmark/mesh_AABB.cpp
-		app/benchmark/AABBWrapper.cpp
-		app/benchmark/AABBWrapper.h
-		app/benchmark/sampling.h
-		app/benchmark/sampling.cpp
-	)
-	add_library(${PROJECT_NAME}_app ${APP_SOURCES})
-	target_include_directories(${PROJECT_NAME}_app PUBLIC ${PROJECT_BINARY_DIR}/include)
-	target_include_directories(${PROJECT_NAME}_app PUBLIC app)
-
-	target_link_libraries(${PROJECT_NAME}_app PUBLIC ${PROJECT_NAME})
-
-	# executable
-	add_executable(${PROJECT_NAME}_bin app/main.cpp)
-	target_link_libraries(${PROJECT_NAME}_bin PUBLIC ${PROJECT_NAME}_app)
-
-	target_compile_features(${PROJECT_NAME}_bin PUBLIC ${CXX14_FEATURES})
-	if(FAST_ENVELOPE_WITH_SANITIZERS)
-		add_sanitizers(${PROJECT_NAME}_bin)
-	endif()
-
-
-	if(FAST_ENVELOPE_ENABLE_TBB)
-		target_link_libraries(${PROJECT_NAME}_bin PUBLIC TBB::tbb)
-	endif()
-
-	if(NOT (${CMAKE_VERSION} VERSION_LESS "3.6.0"))
-		set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME}_bin)
-	endif()
-	fast_envelope_copy_dll(${PROJECT_NAME}_bin)
 endif()

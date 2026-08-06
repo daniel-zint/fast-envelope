@@ -276,7 +276,7 @@ int orient_2d(const Vector2& p0, const Vector2& p1, const Vector2& p2)
     const explicitPoint2D a(p0[0], p0[1]);
     const explicitPoint2D b(p1[0], p1[1]);
     const explicitPoint2D c(p2[0], p2[1]);
-    return genericPoint::orient2D(a, b, c);
+    return -genericPoint::orient2D(a, b, c);
 }
 
 int orient_3d(
@@ -289,7 +289,7 @@ int orient_3d(
     const explicitPoint3D b(p1[0], p1[1], p1[2]);
     const explicitPoint3D c(p2[0], p2[1], p2[2]);
     const explicitPoint3D d(p3[0], p3[1], p3[2]);
-    return genericPoint::orient3D(a, b, c, d);
+    return -genericPoint::orient3D(a, b, c, d);
 }
 
 

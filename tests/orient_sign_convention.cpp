@@ -24,6 +24,7 @@
 #include <catch2/catch_all.hpp>
 #include <cstdio>
 
+#include <fastenvelope/common_algorithms.h>
 #include <fastenvelope/indirectPredicates/ip_filtered.h>
 
 static int failures = 0;
@@ -253,4 +254,22 @@ TEST_CASE("orient sign", "[convention]")
 
     std::printf("\n%s\n", failures ? "FAILED" : "all sign conventions as expected");
     REQUIRE(failures == 0);
+}
+
+TEST_CASE("explicit orientation preserves the legacy sign convention", "[convention]")
+{
+    using namespace fastEnvelope;
+
+    const Vector2 a2(0, 0);
+    const Vector2 b2(1, 0);
+    const Vector2 c2(0, 1);
+    CHECK(algorithms::orient_2d(a2, b2, c2) == -1);
+    CHECK(algorithms::orient_2d(a2, c2, b2) == 1);
+
+    const Vector3 above(0, 0, 1);
+    const Vector3 a3(0, 0, 0);
+    const Vector3 b3(1, 0, 0);
+    const Vector3 c3(0, 1, 0);
+    CHECK(algorithms::orient_3d(above, a3, b3, c3) == 1);
+    CHECK(algorithms::orient_3d(above, a3, c3, b3) == -1);
 }

@@ -24,7 +24,7 @@ target_link_libraries(envelope_unit_tests PUBLIC Catch2::Catch2WithMain)
 
 target_compile_definitions(
   envelope_unit_tests
-  PUBLIC ENVELOPE_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/app/test_data/"
+  PUBLIC ENVELOPE_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/"
 )
 
 ################################################################################

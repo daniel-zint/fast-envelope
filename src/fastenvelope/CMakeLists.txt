@@ -3,7 +3,6 @@ set(SOURCES
         AABB.cpp
         FastEnvelope.cpp
         FastEnvelope.h
-        #Logger.hpp
         Morton.h
         Morton.cpp
         Types.hpp
