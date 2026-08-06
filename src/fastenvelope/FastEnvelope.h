@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include <fastenvelope/AABB.h>
-#include <fastenvelope/Types.hpp>
+#include "AABB.h"
+#include "Types.hpp"
 
 #include <fenv.h>
 #include <array>
